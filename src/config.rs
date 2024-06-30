@@ -1,0 +1,136 @@
+use anyhow::{ensure, Result};
+use serde::Deserialize;
+use std::{collections::HashMap, fmt::Display, fs, path::PathBuf, str};
+
+use crate::template::{Colorscheme, Template};
+
+#[derive(Debug)]
+pub struct Config {
+    templates: Vec<Template>,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct ConfigInput {
+    colorschemes: HashMap<String, Colorscheme>,
+    settings: HashMap<String, TemplateInput>,
+}
+
+#[derive(Debug, Deserialize)]
+struct TemplateInput {
+    /// The theme to use.
+    theme: Option<String>,
+    /// The output **directory**.
+    output: Option<PathBuf>,
+    /// The new file name.
+    name: Option<String>,
+}
+
+impl TemplateInput {
+    fn convert_to_template(
+        &self,
+        output: &PathBuf,
+        input_name: &String,
+        templates_path: &PathBuf,
+        colorschemes: &HashMap<String, Colorscheme>,
+    ) -> Template {
+        let colorscheme = if let Some(theme) = &self.theme {
+            colorschemes.get(theme).unwrap()
+        } else {
+            colorschemes.get("default").unwrap()
+        }
+        .clone();
+
+        let output = if let Some(output) = &self.output {
+            output
+        } else {
+            output
+        }
+        .to_path_buf();
+
+        let name = if let Some(name) = &self.name {
+            name
+        } else {
+            input_name
+        }
+        .clone();
+
+        Template {
+            theme: colorscheme,
+            output,
+            input: templates_path.join(input_name),
+            name,
+        }
+    }
+}
+
+#[derive(Debug)]
+enum ConfigLoadError {
+    NoDefaultFound,
+    ColorschemeNotFound(String),
+}
+
+impl Display for ConfigLoadError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let output = match self {
+            Self::NoDefaultFound => "No \"default\" color scheme found.".to_string(),
+            Self::ColorschemeNotFound(name) => format!("Colorscheme {name} not found"),
+        };
+
+        f.write_str(&output)?;
+
+        Ok(())
+    }
+}
+
+impl Config {
+    pub fn new(config_location: PathBuf, templates_location: PathBuf) -> Result<Self> {
+        let contents = fs::read(config_location)?;
+        let contents = str::from_utf8(&contents)?;
+
+        let output: ConfigInput = toml::from_str(contents)?;
+        output.validate()?;
+
+        let templates: Vec<Template> = output
+            .settings
+            .iter()
+            .map(|(name, v)| {
+                v.convert_to_template(
+                    &templates_location,
+                    name,
+                    &templates_location,
+                    &output.colorschemes,
+                )
+            })
+            .collect();
+
+        Ok(Self { templates })
+    }
+
+    pub fn output(&self) -> Result<()> {
+        for template in self.templates.iter() {
+            template.output()?;
+        }
+
+        Ok(())
+    }
+}
+
+impl ConfigInput {
+    fn validate(&self) -> Result<()> {
+        ensure!(
+            self.colorschemes.contains_key("default"),
+            ConfigLoadError::NoDefaultFound
+        );
+
+        for template in self.settings.values() {
+            if let Some(theme) = &template.theme {
+                ensure!(
+                    self.colorschemes.contains_key(theme),
+                    ConfigLoadError::ColorschemeNotFound(theme.to_string())
+                )
+            }
+        }
+
+        Ok(())
+    }
+}
