@@ -106,7 +106,7 @@ impl Config {
 
         // deserialize to struct ConfigInput
         let config_input: ConfigInput = toml::from_str(contents)?;
-        config_input.validate()?;
+        config_input.validate(&templates_location)?;
 
         // load all templates
         let mut templates: HashSet<Template> = if let Some(settings) = &config_input.settings {
@@ -114,7 +114,7 @@ impl Config {
                 .iter()
                 .map(|(name, v)| {
                     v.convert_to_template(
-                        &templates_location,
+                        &output_location,
                         name,
                         &templates_location,
                         &config_input.colorschemes,
@@ -125,8 +125,18 @@ impl Config {
             HashSet::new()
         };
 
+        let input_paths: Vec<_> = templates
+            .iter()
+            .map(|template| template.input.clone())
+            .collect();
+
         for entry in fs::read_dir(&templates_location)? {
             let entry = entry.unwrap();
+
+            if input_paths.contains(&entry.path()) {
+                continue;
+            }
+
             let name = entry.file_name().into_string().unwrap();
 
             templates.insert(Template {
@@ -149,7 +159,7 @@ impl Config {
 }
 
 impl ConfigInput {
-    fn validate(&self) -> Result<()> {
+    fn validate(&self, template_loc: &PathBuf) -> Result<()> {
         ensure!(
             self.colorschemes.contains_key("default"),
             ConfigLoadError::NoDefaultFound
@@ -160,7 +170,12 @@ impl ConfigInput {
         } else {
             let settings = self.settings.as_ref().unwrap();
 
-            for template in settings.values() {
+            for (name, template) in settings.iter() {
+                ensure!(
+                    template_loc.join(name).exists(),
+                    format!("File \"{name}\" does not exist")
+                );
+
                 if let Some(theme) = &template.theme {
                     ensure!(
                         self.colorschemes.contains_key(theme),

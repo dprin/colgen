@@ -28,7 +28,7 @@ fn main() -> Result<()> {
     println!("{args:?}");
 
     let config = Config::new(args.config, args.templates, args.output)?;
-    println!("{config:?}");
+    println!("{config:#?}");
 
     config.output()?;
 
