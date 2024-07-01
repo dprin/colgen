@@ -12,10 +12,10 @@ pub struct Config {
 #[derive(Debug, Deserialize)]
 pub struct ConfigInput {
     colorschemes: HashMap<String, Colorscheme>,
-    settings: HashMap<String, TemplateInput>,
+    settings: Option<HashMap<String, TemplateInput>>,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Clone)]
 struct TemplateInput {
     /// The theme to use.
     theme: Option<String>,
@@ -90,18 +90,21 @@ impl Config {
         let output: ConfigInput = toml::from_str(contents)?;
         output.validate()?;
 
-        let templates: Vec<Template> = output
-            .settings
-            .iter()
-            .map(|(name, v)| {
-                v.convert_to_template(
-                    &templates_location,
-                    name,
-                    &templates_location,
-                    &output.colorschemes,
-                )
-            })
-            .collect();
+        let templates: Vec<Template> = if let Some(settings) = &output.settings {
+            settings
+                .iter()
+                .map(|(name, v)| {
+                    v.convert_to_template(
+                        &templates_location,
+                        name,
+                        &templates_location,
+                        &output.colorschemes,
+                    )
+                })
+                .collect()
+        } else {
+            Vec::new()
+        };
 
         Ok(Self { templates })
     }
@@ -122,15 +125,21 @@ impl ConfigInput {
             ConfigLoadError::NoDefaultFound
         );
 
-        for template in self.settings.values() {
-            if let Some(theme) = &template.theme {
-                ensure!(
-                    self.colorschemes.contains_key(theme),
-                    ConfigLoadError::ColorschemeNotFound(theme.to_string())
-                )
-            }
-        }
+        if let None = self.settings {
+            Ok(())
+        } else {
+            let settings = self.settings.as_ref().unwrap();
 
-        Ok(())
+            for template in settings.values() {
+                if let Some(theme) = &template.theme {
+                    ensure!(
+                        self.colorschemes.contains_key(theme),
+                        ConfigLoadError::ColorschemeNotFound(theme.to_string())
+                    )
+                }
+            }
+
+            Ok(())
+        }
     }
 }

@@ -11,9 +11,7 @@ pub struct Color(String);
 
 /// Colorscheme object that holds all colors of a colorscheme
 #[derive(Debug, Deserialize, Clone)]
-pub struct Colorscheme {
-    colors: HashMap<String, Color>,
-}
+pub struct Colorscheme(HashMap<String, Color>);
 
 /// The settings for a template file.
 #[derive(Debug)]
@@ -42,13 +40,13 @@ impl Template {
 
         let input_file = fs::read(&self.input)?;
         let mut input_file = str::from_utf8(&input_file)?.to_string();
+        let Colorscheme(theme) = &self.theme;
 
-        for (k, v) in self.theme.colors.iter() {
+        for (k, Color(v)) in theme.iter() {
             // replace k -> {k}
             let to_replace = format!("{{{}}}", k);
-            let Color(replace_with) = v;
 
-            input_file = input_file.replace(&to_replace, replace_with);
+            input_file = input_file.replace(&to_replace, v);
         }
 
         fs::write(self.output.join(&self.name), input_file)?;
