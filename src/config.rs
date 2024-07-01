@@ -4,7 +4,7 @@ use std::{
     collections::{HashMap, HashSet},
     fmt::Display,
     fs,
-    path::PathBuf,
+    path::{Path, PathBuf},
     str,
 };
 
@@ -36,7 +36,7 @@ impl TemplateInput {
         &self,
         output: &PathBuf,
         input_name: &String,
-        templates_path: &PathBuf,
+        templates_path: &Path,
         colorschemes: &HashMap<String, Colorscheme>,
     ) -> Template {
         let colorscheme = if let Some(theme) = &self.theme {
@@ -159,13 +159,13 @@ impl Config {
 }
 
 impl ConfigInput {
-    fn validate(&self, template_loc: &PathBuf) -> Result<()> {
+    fn validate(&self, template_loc: &Path) -> Result<()> {
         ensure!(
             self.colorschemes.contains_key("default"),
             ConfigLoadError::NoDefaultFound
         );
 
-        if let None = self.settings {
+        if self.settings.is_none() {
             Ok(())
         } else {
             let settings = self.settings.as_ref().unwrap();

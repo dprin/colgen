@@ -68,7 +68,7 @@ impl Template {
             input_file = input_file.replace(&to_replace, v);
         }
 
-        File::create(&self.output)?.write(input_file.as_bytes())?;
+        File::create(&self.output)?.write_all(input_file.as_bytes())?;
         Ok(())
     }
 }
