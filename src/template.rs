@@ -1,4 +1,11 @@
-use std::{collections::HashMap, fs, path::PathBuf, str};
+use std::{
+    collections::HashMap,
+    fs::{self, File},
+    hash::Hash,
+    io::Write,
+    path::PathBuf,
+    str,
+};
 
 use anyhow::{ensure, Result};
 use serde::Deserialize;
@@ -6,15 +13,28 @@ use serde::Deserialize;
 // TODO: more universal implementation for most formats
 //       of colors
 /// For now a color is as simple as a string
-#[derive(Debug, Deserialize, Clone)]
+#[derive(Debug, Deserialize, Clone, PartialEq, PartialOrd, Hash)]
 pub struct Color(String);
 
 /// Colorscheme object that holds all colors of a colorscheme
-#[derive(Debug, Deserialize, Clone)]
+#[derive(Debug, Deserialize, Clone, PartialEq)]
 pub struct Colorscheme(HashMap<String, Color>);
 
+impl Hash for Colorscheme {
+    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+        let Colorscheme(map) = self;
+
+        for (k, v) in map.iter() {
+            k.hash(state);
+            v.hash(state);
+        }
+    }
+}
+
+impl Eq for Colorscheme {}
+
 /// The settings for a template file.
-#[derive(Debug)]
+#[derive(Debug, PartialEq, Hash, Eq)]
 pub struct Template {
     /// The theme to use.
     pub theme: Colorscheme,
@@ -24,19 +44,18 @@ pub struct Template {
 
     /// The output **directory**.
     pub output: PathBuf,
-
-    /// The new file name.
-    pub name: String,
 }
 
 impl Template {
     // TODO: Make a better implementation
     pub fn output(&self) -> Result<()> {
-        if !self.output.exists() {
-            fs::create_dir(&self.output)?;
+        let parent = self.output.parent().unwrap();
+
+        if !parent.exists() {
+            fs::create_dir(parent)?;
         }
 
-        ensure!(self.output.is_dir(), "Output is not a directory!");
+        ensure!(parent.is_dir(), "Output folder is not a directory!");
 
         let input_file = fs::read(&self.input)?;
         let mut input_file = str::from_utf8(&input_file)?.to_string();
@@ -49,8 +68,7 @@ impl Template {
             input_file = input_file.replace(&to_replace, v);
         }
 
-        fs::write(self.output.join(&self.name), input_file)?;
-
+        File::create(&self.output)?.write(input_file.as_bytes())?;
         Ok(())
     }
 }

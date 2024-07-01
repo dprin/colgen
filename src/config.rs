@@ -1,12 +1,18 @@
 use anyhow::{ensure, Result};
 use serde::Deserialize;
-use std::{collections::HashMap, fmt::Display, fs, path::PathBuf, str};
+use std::{
+    collections::{HashMap, HashSet},
+    fmt::Display,
+    fs,
+    path::PathBuf,
+    str,
+};
 
 use crate::template::{Colorscheme, Template};
 
 #[derive(Debug)]
 pub struct Config {
-    templates: Vec<Template>,
+    templates: HashSet<Template>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -40,25 +46,24 @@ impl TemplateInput {
         }
         .clone();
 
+        let name = if let Some(name) = &self.name {
+            name
+        } else {
+            input_name
+        };
+
         let output = if let Some(output) = &self.output {
             output
         } else {
             output
         }
-        .to_path_buf();
-
-        let name = if let Some(name) = &self.name {
-            name
-        } else {
-            input_name
-        }
-        .clone();
+        .to_path_buf()
+        .join(name);
 
         Template {
             theme: colorscheme,
             output,
             input: templates_path.join(input_name),
-            name,
         }
     }
 }
@@ -83,14 +88,28 @@ impl Display for ConfigLoadError {
 }
 
 impl Config {
-    pub fn new(config_location: PathBuf, templates_location: PathBuf) -> Result<Self> {
+    pub fn new(
+        config_location: PathBuf,
+        templates_location: PathBuf,
+        output_location: PathBuf,
+    ) -> Result<Self> {
+        // check if everything is valid
+        ensure!(config_location.is_file(), "Config location is not a file");
+        ensure!(
+            templates_location.is_dir(),
+            "Template location is not a dir"
+        );
+
+        // get contents of the config
         let contents = fs::read(config_location)?;
         let contents = str::from_utf8(&contents)?;
 
-        let output: ConfigInput = toml::from_str(contents)?;
-        output.validate()?;
+        // deserialize to struct ConfigInput
+        let config_input: ConfigInput = toml::from_str(contents)?;
+        config_input.validate()?;
 
-        let templates: Vec<Template> = if let Some(settings) = &output.settings {
+        // load all templates
+        let mut templates: HashSet<Template> = if let Some(settings) = &config_input.settings {
             settings
                 .iter()
                 .map(|(name, v)| {
@@ -98,13 +117,24 @@ impl Config {
                         &templates_location,
                         name,
                         &templates_location,
-                        &output.colorschemes,
+                        &config_input.colorschemes,
                     )
                 })
                 .collect()
         } else {
-            Vec::new()
+            HashSet::new()
         };
+
+        for entry in fs::read_dir(&templates_location)? {
+            let entry = entry.unwrap();
+            let name = entry.file_name().into_string().unwrap();
+
+            templates.insert(Template {
+                input: templates_location.join(&name),
+                theme: config_input.colorschemes.get("default").unwrap().clone(),
+                output: output_location.join(&name),
+            });
+        }
 
         Ok(Self { templates })
     }
