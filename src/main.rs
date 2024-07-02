@@ -4,6 +4,7 @@ use anyhow::Result;
 use clap::Parser;
 use config::Config;
 
+mod input;
 mod config;
 mod template;
 

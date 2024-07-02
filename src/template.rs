@@ -47,7 +47,6 @@ pub struct Template {
 }
 
 impl Template {
-    // TODO: Make a better implementation
     pub fn output(&self) -> Result<()> {
         let parent = self.output.parent().unwrap();
 
@@ -58,17 +57,23 @@ impl Template {
         ensure!(parent.is_dir(), "Output folder is not a directory!");
 
         let input_file = fs::read(&self.input)?;
-        let mut input_file = str::from_utf8(&input_file)?.to_string();
-        let Colorscheme(theme) = &self.theme;
-
-        for (k, Color(v)) in theme.iter() {
-            // replace k -> {k}
-            let to_replace = format!("{{{}}}", k);
-
-            input_file = input_file.replace(&to_replace, v);
-        }
+        let input_file = str::from_utf8(&input_file)?.to_string();
+        let input_file = self.insert_colors(input_file);
 
         File::create(&self.output)?.write_all(input_file.as_bytes())?;
         Ok(())
+    }
+
+    pub fn insert_colors(&self, input: String) -> String {
+        let Colorscheme(theme) = &self.theme;
+        let mut input = input.clone();
+
+        for (k, Color(v)) in theme.iter() {
+            // replace {k} -> v
+            let to_replace = format!("{{{}}}", k);
+            input = input.replace(&to_replace, v);
+        }
+
+        input
     }
 }
