@@ -1,7 +1,7 @@
 use std::{
     collections::{HashMap, HashSet},
     fs,
-    path::{Path, PathBuf},
+    path::Path,
 };
 
 use anyhow::{ensure, Result};
@@ -47,7 +47,7 @@ impl ConfigIntermediate {
     fn construct_templates(
         &self,
         colorschemes: &HashMap<String, Colorscheme>,
-        templates_loc: &PathBuf,
+        templates_loc: &Path,
     ) -> HashSet<Template> {
         self.templates
             .iter()
@@ -60,7 +60,7 @@ impl ConfigIntermediate {
             .collect()
     }
 
-    pub fn construct(&self, templates_loc: &PathBuf) -> Result<HashSet<Template>> {
+    pub fn construct(&self, templates_loc: &Path) -> Result<HashSet<Template>> {
         let colors = self.construct_colorschemes()?;
         Ok(self.construct_templates(&colors, templates_loc))
     }
@@ -70,7 +70,7 @@ impl ConfigInput {
     pub(crate) fn validate(
         &mut self,
         template_loc: &Path,
-        output_loc: &PathBuf,
+        output_loc: &Path,
     ) -> Result<ConfigIntermediate> {
         // Colorschemes
         ensure!(
@@ -103,15 +103,14 @@ impl ConfigInput {
             HashMap::new()
         };
 
-        for entry in fs::read_dir(&template_loc)? {
+        for entry in fs::read_dir(template_loc)? {
             let entry = entry.unwrap();
 
             let name = entry.file_name().into_string().unwrap();
 
-            if !templates.contains_key(&name) {
-                let v = TemplateIntermediate::new(&name, &output_loc);
-                templates.insert(name, v);
-            }
+            templates
+                .entry(name.clone())
+                .or_insert_with(|| TemplateIntermediate::new(&name, output_loc));
         }
 
         Ok(ConfigIntermediate {

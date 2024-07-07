@@ -26,7 +26,7 @@ pub(crate) struct TemplateIntermediate {
 }
 
 impl TemplateIntermediate {
-    pub fn new(name: &String, output: &PathBuf) -> Self {
+    pub fn new(name: &String, output: &Path) -> Self {
         Self {
             theme: "default".to_string(),
             output: output.join(name),

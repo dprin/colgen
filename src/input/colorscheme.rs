@@ -67,7 +67,7 @@ impl ColorschemeInput {
             .iter()
             .map(|(k, v)| match v {
                 ColorschemeValue::Color(c) => Ok((k.clone(), c.clone())),
-                _ => return Err(Error::msg("Color is not the correct type.")),
+                _ => Err(Error::msg("Color is not the correct type.")),
             })
             .collect();
         let colors = colors?;
@@ -101,9 +101,7 @@ pub fn compilation_strategy(
 
     impl PartialOrd for Intermediate<'_> {
         fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
-            self.dependencies
-                .len()
-                .partial_cmp(&other.dependencies.len())
+            Some(self.cmp(other))
         }
     }
 
