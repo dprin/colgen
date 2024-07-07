@@ -5,12 +5,18 @@ use serde::Deserialize;
 
 use crate::template::{Color, Colorscheme};
 
-#[derive(Debug, Deserialize, Clone, Default)]
+#[derive(Debug, Deserialize, Clone)]
 pub(crate) struct SettingsInput {
-    inherits: Vec<String>,
+    inherit: Option<Vec<String>>,
+}
+
+#[derive(Debug, Default)]
+pub(crate) struct SettingsIntermediate {
+    inherit: Vec<String>,
 }
 
 #[derive(Debug, Deserialize)]
+#[serde(untagged)]
 pub(crate) enum ColorschemeValue {
     Settings(SettingsInput),
     Color(Color),
@@ -19,9 +25,9 @@ pub(crate) enum ColorschemeValue {
 #[derive(Debug, Deserialize)]
 pub(crate) struct ColorschemeInput(HashMap<String, ColorschemeValue>);
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug)]
 pub(crate) struct ColorschemeIntermediate {
-    settings: SettingsInput,
+    settings: SettingsIntermediate,
     colors: HashMap<String, Color>,
 }
 
@@ -29,7 +35,7 @@ impl ColorschemeIntermediate {
     pub(crate) fn compile(&self, current_state: &HashMap<String, Colorscheme>) -> Colorscheme {
         let mut colorscheme = Colorscheme::new();
 
-        for dependency in &self.settings.inherits {
+        for dependency in &self.settings.inherit {
             let dependency = current_state.get(dependency).unwrap();
             colorscheme.inherit(dependency)
         }
@@ -41,14 +47,16 @@ impl ColorschemeIntermediate {
 
 impl ColorschemeInput {
     pub fn validate(&mut self) -> Result<ColorschemeIntermediate> {
-        let settings = if let Some(setting) = self.0.get("settings") {
-            if let ColorschemeValue::Settings(v) = setting {
-                v.clone()
-            } else {
-                return Err(Error::msg("Settings does not have the correct type."));
+        // extract settings to the correct type
+        let settings = if let Some(settings) = self.0.get("settings") {
+            match settings {
+                ColorschemeValue::Settings(s) => SettingsIntermediate {
+                    inherit: s.inherit.clone().unwrap_or_default(),
+                },
+                _ => return Err(Error::msg("Settings does not have the correct type.")),
             }
         } else {
-            SettingsInput::default()
+            SettingsIntermediate::default()
         };
 
         // This is why it's mutable, i don't think it's a good
@@ -77,11 +85,32 @@ impl ColorschemeInput {
 pub fn compilation_strategy(
     colorschemes: &HashMap<String, ColorschemeIntermediate>,
 ) -> Result<Vec<String>> {
-    // TODO: write how to sort it
-    #[derive(PartialEq, PartialOrd, Ord, Eq, Clone)]
+    #[derive(Clone)]
     struct Intermediate<'a> {
         name: &'a String,
         dependencies: Vec<String>,
+    }
+
+    impl PartialEq for Intermediate<'_> {
+        fn eq(&self, other: &Self) -> bool {
+            self.dependencies.len() == other.dependencies.len()
+        }
+    }
+
+    impl Eq for Intermediate<'_> {}
+
+    impl PartialOrd for Intermediate<'_> {
+        fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
+            self.dependencies
+                .len()
+                .partial_cmp(&other.dependencies.len())
+        }
+    }
+
+    impl Ord for Intermediate<'_> {
+        fn cmp(&self, other: &Self) -> std::cmp::Ordering {
+            self.dependencies.len().cmp(&other.dependencies.len())
+        }
     }
 
     let mut order: Vec<String> = Vec::with_capacity(colorschemes.len());
@@ -89,7 +118,7 @@ pub fn compilation_strategy(
         .iter()
         .map(|(name, colorscheme)| Intermediate {
             name,
-            dependencies: colorscheme.settings.inherits.clone(),
+            dependencies: colorscheme.settings.inherit.clone(),
         })
         .collect();
 

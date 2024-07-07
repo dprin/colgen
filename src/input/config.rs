@@ -33,8 +33,11 @@ impl ConfigIntermediate {
         let strategy = compilation_strategy(&self.colorschemes)?;
         let mut res: HashMap<String, Colorscheme> = HashMap::new();
 
+        dbg!(&strategy);
+
         for name in strategy {
             let value = self.colorschemes.get(&name).unwrap().compile(&res);
+            dbg!(&value);
             res.insert(name, value);
         }
 
