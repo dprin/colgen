@@ -3,7 +3,10 @@ use std::collections::HashMap;
 use anyhow::{Error, Result};
 use serde::Deserialize;
 
-use crate::{intermediate::colorscheme::{ColorschemeIntermediate, SettingsIntermediate}, template::Color};
+use crate::{
+    intermediate::colorscheme::{ColorschemeIntermediate, SettingsIntermediate},
+    template::Color,
+};
 
 #[derive(Debug, Deserialize, Clone)]
 pub(crate) struct SettingsInput {

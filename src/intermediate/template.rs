@@ -9,7 +9,7 @@ impl TemplateIntermediate {
     pub fn new(filename: &String, output: &Path) -> Self {
         Self {
             theme: "default".to_string(),
-            output: output.join(filename)
+            output: output.join(filename),
         }
     }
 }

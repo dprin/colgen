@@ -3,7 +3,13 @@ use std::{collections::HashMap, fs, path::Path};
 use anyhow::{ensure, Result};
 use serde::Deserialize;
 
-use crate::{input::ConfigLoadError, intermediate::{colorscheme::ColorschemeIntermediate, config::ConfigIntermediate, template::TemplateIntermediate}};
+use crate::{
+    input::ConfigLoadError,
+    intermediate::{
+        colorscheme::ColorschemeIntermediate, config::ConfigIntermediate,
+        template::TemplateIntermediate,
+    },
+};
 
 use super::{colorscheme::ColorschemeInput, template::TemplateInput};
 

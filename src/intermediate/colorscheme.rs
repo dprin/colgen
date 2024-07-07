@@ -15,7 +15,6 @@ pub(crate) struct SettingsIntermediate {
     pub(crate) inherit: Vec<String>,
 }
 
-
 impl ColorschemeIntermediate {
     pub(crate) fn compile(&self, current_state: &HashMap<String, Colorscheme>) -> Colorscheme {
         let mut colorscheme = Colorscheme::new();

@@ -1,8 +1,14 @@
-use std::{collections::{HashMap, HashSet}, path::Path};
+use std::{
+    collections::{HashMap, HashSet},
+    path::Path,
+};
 
 use anyhow::Result;
 
-use crate::{intermediate::colorscheme::compilation_strategy, template::{Colorscheme, Template}};
+use crate::{
+    intermediate::colorscheme::compilation_strategy,
+    template::{Colorscheme, Template},
+};
 
 use super::{colorscheme::ColorschemeIntermediate, template::TemplateIntermediate};
 

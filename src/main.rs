@@ -5,8 +5,8 @@ use clap::Parser;
 use config::Config;
 
 mod config;
-mod intermediate;
 mod input;
+mod intermediate;
 mod template;
 
 #[derive(Parser, Debug)]
