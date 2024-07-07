@@ -18,7 +18,7 @@ pub struct Color(String);
 
 /// Colorscheme object that holds all colors of a colorscheme
 #[derive(Debug, Deserialize, Clone, PartialEq)]
-pub struct Colorscheme(HashMap<String, Color>);
+pub struct Colorscheme(pub HashMap<String, Color>);
 
 impl Hash for Colorscheme {
     fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
@@ -27,6 +27,18 @@ impl Hash for Colorscheme {
         for (k, v) in map.iter() {
             k.hash(state);
             v.hash(state);
+        }
+    }
+}
+
+impl Colorscheme {
+    pub fn new() -> Self {
+        Colorscheme(HashMap::new())
+    }
+
+    pub fn inherit(&mut self, other: &Self) {
+        for (key, value) in &other.0 {
+            self.0.insert(key.clone(), value.clone());
         }
     }
 }
@@ -42,7 +54,7 @@ pub struct Template {
     /// The input **template file**.
     pub input: PathBuf,
 
-    /// The output **directory**.
+    /// The output **file**.
     pub output: PathBuf,
 }
 

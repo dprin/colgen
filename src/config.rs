@@ -1,12 +1,13 @@
 use anyhow::{ensure, Result};
 use std::{collections::HashSet, fs, path::PathBuf, str};
 
-use crate::{input::ConfigInput, template::Template};
+use crate::{input::config::ConfigInput, template::Template};
 
 #[derive(Debug)]
 pub struct Config {
     templates: HashSet<Template>,
 }
+
 impl Config {
     pub fn new(
         config_location: PathBuf,
@@ -25,46 +26,12 @@ impl Config {
         let contents = str::from_utf8(&contents)?;
 
         // deserialize to struct ConfigInput
-        let config_input: ConfigInput = toml::from_str(contents)?;
-        config_input.validate(&templates_location)?;
+        let mut config_input: ConfigInput = toml::from_str(contents)?;
 
-        // load all templates
-        let mut templates: HashSet<Template> = if let Some(settings) = &config_input.settings {
-            settings
-                .iter()
-                .map(|(name, v)| {
-                    v.convert_to_template(
-                        &output_location,
-                        name,
-                        &templates_location,
-                        &config_input.colorschemes,
-                    )
-                })
-                .collect()
-        } else {
-            HashSet::new()
-        };
-
-        let input_paths: Vec<_> = templates
-            .iter()
-            .map(|template| template.input.clone())
-            .collect();
-
-        for entry in fs::read_dir(&templates_location)? {
-            let entry = entry.unwrap();
-
-            if input_paths.contains(&entry.path()) {
-                continue;
-            }
-
-            let name = entry.file_name().into_string().unwrap();
-
-            templates.insert(Template {
-                input: templates_location.join(&name),
-                theme: config_input.colorschemes.get("default").unwrap().clone(),
-                output: output_location.join(&name),
-            });
-        }
+        // get templates from the validated config
+        let templates = config_input
+            .validate(&templates_location, &output_location)?
+            .construct(&templates_location)?;
 
         Ok(Self { templates })
     }
