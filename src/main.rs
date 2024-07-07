@@ -5,6 +5,7 @@ use clap::Parser;
 use config::Config;
 
 mod config;
+mod intermediate;
 mod input;
 mod template;
 

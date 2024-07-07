@@ -6,9 +6,10 @@ use std::{
 use anyhow::{ensure, Result};
 use serde::Deserialize;
 
-use crate::input::ConfigLoadError;
-
-use super::colorscheme::ColorschemeIntermediate;
+use crate::{
+    input::ConfigLoadError,
+    intermediate::{colorscheme::ColorschemeIntermediate, template::TemplateIntermediate},
+};
 
 #[derive(Debug, Deserialize, Clone)]
 pub(crate) struct TemplateInput {
@@ -18,20 +19,6 @@ pub(crate) struct TemplateInput {
     output: Option<PathBuf>,
     /// The new file name.
     name: Option<String>,
-}
-
-pub(crate) struct TemplateIntermediate {
-    pub(crate) theme: String,
-    pub(crate) output: PathBuf,
-}
-
-impl TemplateIntermediate {
-    pub fn new(name: &String, output: &Path) -> Self {
-        Self {
-            theme: "default".to_string(),
-            output: output.join(name),
-        }
-    }
 }
 
 impl TemplateInput {
@@ -68,9 +55,6 @@ impl TemplateInput {
             template_loc.join(&name)
         };
 
-        Ok(TemplateIntermediate {
-            theme,
-            output
-        })
+        Ok(TemplateIntermediate { theme, output })
     }
 }
