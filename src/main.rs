@@ -27,10 +27,7 @@ struct Args {
 
 fn main() -> Result<()> {
     let args = Args::parse();
-    println!("{args:?}");
-
     let config = Config::new(args.config, args.templates, args.output)?;
-    println!("{config:#?}");
 
     config.output()?;
 
