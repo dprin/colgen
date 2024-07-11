@@ -21,8 +21,9 @@ impl ColorschemeIntermediate {
         let mut colorscheme = Colorscheme::new();
 
         colorscheme
-            .inherit_all(&self.settings.inherit, current_state, &self.colors)
-            .rename_all(&self.settings.rename);
+            .inherit_all(&self.settings.inherit, current_state)
+            .rename_all(&self.settings.rename)
+            .insert(&self.colors);
 
         colorscheme
     }

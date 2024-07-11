@@ -67,15 +67,19 @@ impl Colorscheme {
         &mut self,
         to_inherit: &Vec<String>,
         current_state: &HashMap<String, Self>,
-        final_addition: &HashMap<String, Color>,
     ) -> &mut Self {
         for dependency in to_inherit {
             let dependency = current_state.get(dependency).unwrap();
             self.inherit(dependency);
         }
 
-        // TODO: figure out a better way to do
-        self.inherit(&Colorscheme(final_addition.clone()));
+        self
+    }
+
+    pub fn insert(&mut self, map: &HashMap<String, Color>) -> &mut Self {
+        for (k, v) in map {
+            self.0.insert(k.clone(), v.clone());
+        }
 
         self
     }
