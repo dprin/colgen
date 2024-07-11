@@ -13,18 +13,17 @@ pub(crate) struct ColorschemeIntermediate {
 #[derive(Debug, Default)]
 pub(crate) struct SettingsIntermediate {
     pub(crate) inherit: Vec<String>,
+    pub(crate) rename: HashMap<String, String>,
 }
 
 impl ColorschemeIntermediate {
     pub(crate) fn compile(&self, current_state: &HashMap<String, Colorscheme>) -> Colorscheme {
         let mut colorscheme = Colorscheme::new();
 
-        for dependency in &self.settings.inherit {
-            let dependency = current_state.get(dependency).unwrap();
-            colorscheme.inherit(dependency)
-        }
+        colorscheme
+            .inherit_all(&self.settings.inherit, current_state, &self.colors)
+            .rename_all(&self.settings.rename);
 
-        colorscheme.inherit(&Colorscheme(self.colors.clone()));
         colorscheme
     }
 }

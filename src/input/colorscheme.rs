@@ -11,6 +11,7 @@ use crate::{
 #[derive(Debug, Deserialize, Clone)]
 pub(crate) struct SettingsInput {
     inherit: Option<Vec<String>>,
+    rename: Option<HashMap<String, String>>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -29,6 +30,7 @@ impl ColorschemeInput {
             match settings {
                 ColorschemeValue::Settings(s) => SettingsIntermediate {
                     inherit: s.inherit.clone().unwrap_or_default(),
+                    rename: s.rename.clone().unwrap_or_default(),
                 },
                 _ => return Err(Error::msg("Settings does not have the correct type.")),
             }

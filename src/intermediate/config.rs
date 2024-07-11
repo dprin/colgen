@@ -26,7 +26,6 @@ impl ConfigIntermediate {
 
         for name in strategy {
             let value = self.colorschemes.get(&name).unwrap().compile(&res);
-            dbg!(&value);
             res.insert(name, value);
         }
 

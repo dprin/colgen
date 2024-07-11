@@ -7,7 +7,7 @@ use std::{
     str,
 };
 
-use anyhow::{ensure, Result};
+use anyhow::{ensure, Error, Result};
 use serde::Deserialize;
 
 // TODO: more universal implementation for most formats
@@ -36,10 +36,48 @@ impl Colorscheme {
         Colorscheme(HashMap::new())
     }
 
-    pub fn inherit(&mut self, other: &Self) {
+    fn inherit(&mut self, other: &Self) {
         for (key, value) in &other.0 {
             self.0.insert(key.clone(), value.clone());
         }
+    }
+
+    fn rename(&mut self, from: &String, to: &String) -> Result<()> {
+        if !self.0.contains_key(from) {
+            return Err(Error::msg(format!(
+                "Couldn't find {from} when renaming to {to}."
+            )));
+        }
+
+        let v = self.0.remove(from).unwrap();
+        self.0.insert(to.clone(), v);
+
+        Ok(())
+    }
+
+    pub fn rename_all(&mut self, variables: &HashMap<String, String>) -> &mut Self {
+        for (from, to) in variables {
+            self.rename(from, to).unwrap();
+        }
+
+        self
+    }
+
+    pub fn inherit_all(
+        &mut self,
+        to_inherit: &Vec<String>,
+        current_state: &HashMap<String, Self>,
+        final_addition: &HashMap<String, Color>,
+    ) -> &mut Self {
+        for dependency in to_inherit {
+            let dependency = current_state.get(dependency).unwrap();
+            self.inherit(dependency);
+        }
+
+        // TODO: figure out a better way to do
+        self.inherit(&Colorscheme(final_addition.clone()));
+
+        self
     }
 }
 
