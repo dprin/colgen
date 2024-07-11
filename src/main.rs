@@ -44,7 +44,9 @@ impl DefaultArgs {
         let config_dir = self.xdg.create_config_directory("colgen")?;
         let complete_path = config_dir.join(path);
 
-        File::create(&complete_path)?;
+        if !complete_path.exists() {
+            File::create(&complete_path)?;
+        }
 
         Ok(complete_path)
     }
@@ -53,9 +55,9 @@ impl DefaultArgs {
         let config_dir = self.xdg.create_config_directory("colgen")?;
         let complete_path = config_dir.join(path);
 
-        fs::create_dir(&complete_path)?;
-
-        dbg!(&complete_path);
+        if !complete_path.exists() {
+            fs::create_dir(&complete_path)?;
+        }
 
         Ok(complete_path)
     }
