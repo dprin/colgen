@@ -30,7 +30,7 @@ impl TemplateInput {
     ) -> Result<TemplateIntermediate> {
         ensure!(
             template_loc.join(&filename).exists(),
-            format!("File \"{filename}\" does not exist")
+            format!("File \"{filename}\" does not exist.")
         );
 
         let theme = if let Some(theme) = &self.theme {

@@ -1,4 +1,4 @@
-use std::{collections::HashMap, fs, path::Path};
+use std::{collections::HashMap, path::Path};
 
 use anyhow::{ensure, Result};
 use serde::Deserialize;
@@ -56,7 +56,7 @@ impl ConfigInput {
             HashMap::new()
         };
 
-        for entry in fs::read_dir(template_loc)? {
+        for entry in template_loc.read_dir()? {
             let entry = entry.unwrap();
 
             let name = entry.file_name().into_string().unwrap();

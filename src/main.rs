@@ -82,7 +82,7 @@ fn main() -> Result<()> {
         None => defaults.create_dir("output")?,
     };
 
-    let config = Config::new(config, output, templates)?;
+    let config = Config::new(config, templates, output)?;
     config.output()?;
 
     Ok(())
