@@ -104,10 +104,6 @@ impl Template {
     pub fn output(&self) -> Result<()> {
         let parent = self.output.parent().unwrap();
 
-        if !parent.exists() {
-            fs::create_dir(parent)?;
-        }
-
         ensure!(parent.is_dir(), "Output folder is not a directory!");
 
         let input_file = fs::read(&self.input)?;
